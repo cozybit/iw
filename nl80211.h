@@ -156,21 +156,23 @@
  * @NL80211_CMD_DEL_KEY: delete a key identified by %NL80211_ATTR_KEY_IDX
  *	or %NL80211_ATTR_MAC.
  *
- * @NL80211_CMD_GET_BEACON: retrieve beacon information (returned in a
- *	%NL80222_CMD_NEW_BEACON message)
- * @NL80211_CMD_SET_BEACON: set the beacon on an access point interface
- *	using the %NL80211_ATTR_BEACON_INTERVAL, %NL80211_ATTR_DTIM_PERIOD,
- *	%NL80211_ATTR_BEACON_HEAD and %NL80211_ATTR_BEACON_TAIL attributes.
- *	Following attributes are provided for drivers that generate full Beacon
- *	and Probe Response frames internally: %NL80211_ATTR_SSID,
+ * @NL80211_CMD_GET_BEACON: (not used)
+ * @NL80211_CMD_SET_BEACON: change the beacon on an access point interface
+ *	using the %NL80211_ATTR_BEACON_HEAD and %NL80211_ATTR_BEACON_TAIL
+ *	attributes. For drivers that generate the beacon and probe responses
+ *	internally, the following attributes must be provided: %NL80211_ATTR_IE,
+ *	%NL80211_ATTR_IE_PROBE_RESP and %NL80211_ATTR_IE_ASSOC_RESP.
+ * @NL80211_CMD_START_AP: Start AP operation on an AP interface, parameters
+ *	are like for %NL80211_CMD_SET_BEACON, and additionally parameters that
+ *	do not change are used, these include %NL80211_ATTR_BEACON_INTERVAL,
+ *	%NL80211_ATTR_DTIM_PERIOD, %NL80211_ATTR_SSID,
  *	%NL80211_ATTR_HIDDEN_SSID, %NL80211_ATTR_CIPHERS_PAIRWISE,
  *	%NL80211_ATTR_CIPHER_GROUP, %NL80211_ATTR_WPA_VERSIONS,
  *	%NL80211_ATTR_AKM_SUITES, %NL80211_ATTR_PRIVACY,
- *	%NL80211_ATTR_AUTH_TYPE, %NL80211_ATTR_IE, %NL80211_ATTR_IE_PROBE_RESP,
- *	%NL80211_ATTR_IE_ASSOC_RESP.
- * @NL80211_CMD_NEW_BEACON: add a new beacon to an access point interface,
- *	parameters are like for %NL80211_CMD_SET_BEACON.
- * @NL80211_CMD_DEL_BEACON: remove the beacon, stop sending it
+ *	%NL80211_ATTR_AUTH_TYPE and %NL80211_ATTR_INACTIVITY_TIMEOUT.
+ * @NL80211_CMD_NEW_BEACON: old alias for %NL80211_CMD_START_AP
+ * @NL80211_CMD_STOP_AP: Stop AP operation on the given interface
+ * @NL80211_CMD_DEL_BEACON: old alias for %NL80211_CMD_STOP_AP
  *
  * @NL80211_CMD_GET_STATION: Get station attributes for station identified by
  *	%NL80211_ATTR_MAC on the interface identified by %NL80211_ATTR_IFINDEX.
@@ -367,6 +369,11 @@
  *	%NL80211_ATTR_WIPHY_FREQ, %NL80211_ATTR_CONTROL_PORT,
  *	%NL80211_ATTR_CONTROL_PORT_ETHERTYPE and
  *	%NL80211_ATTR_CONTROL_PORT_NO_ENCRYPT.
+ *	Background scan period can optionally be
+ *	specified in %NL80211_ATTR_BG_SCAN_PERIOD,
+ *	if not specified default background scan configuration
+ *	in driver is used and if period value is 0, bg scan will be disabled.
+ *	This attribute is ignored if driver does not support roam scan.
  *	It is also sent as an event, with the BSSID and response IEs when the
  *	connection is established or failed to be established. This can be
  *	determined by the STATUS_CODE attribute.
@@ -565,8 +572,10 @@ enum nl80211_commands {
 
 	NL80211_CMD_GET_BEACON,
 	NL80211_CMD_SET_BEACON,
-	NL80211_CMD_NEW_BEACON,
-	NL80211_CMD_DEL_BEACON,
+	NL80211_CMD_START_AP,
+	NL80211_CMD_NEW_BEACON = NL80211_CMD_START_AP,
+	NL80211_CMD_STOP_AP,
+	NL80211_CMD_DEL_BEACON = NL80211_CMD_STOP_AP,
 
 	NL80211_CMD_GET_STATION,
 	NL80211_CMD_SET_STATION,
@@ -1193,6 +1202,19 @@ enum nl80211_commands {
  * @NL80211_ATTR_NOACK_MAP: This u16 bitmap contains the No Ack Policy of
  *      up to 16 TIDs.
  *
+ * @NL80211_ATTR_INACTIVITY_TIMEOUT: timeout value in seconds, this can be
+ *	used by the drivers which has MLME in firmware and does not have support
+ *	to report per station tx/rx activity to free up the staion entry from
+ *	the list. This needs to be used when the driver advertises the
+ *	capability to timeout the stations.
+ *
+ * @NL80211_ATTR_RX_SIGNAL_DBM: signal strength in dBm (as a 32-bit int);
+ *	this attribute is (depending on the driver capabilities) added to
+ *	received frames indicated with %NL80211_CMD_FRAME.
+ *
+ * @NL80211_ATTR_BG_SCAN_PERIOD: Background scan period in seconds
+ *      or 0 to disable background scan.
+ *
  * @NL80211_ATTR_MAX: highest attribute number currently defined
  * @__NL80211_ATTR_AFTER_LAST: internal use
  */
@@ -1438,6 +1460,12 @@ enum nl80211_attrs {
 
 	NL80211_ATTR_NOACK_MAP,
 
+	NL80211_ATTR_INACTIVITY_TIMEOUT,
+
+	NL80211_ATTR_RX_SIGNAL_DBM,
+
+	NL80211_ATTR_BG_SCAN_PERIOD,
+
 	/* add attributes here, update the policy in nl80211.c */
 
 	__NL80211_ATTR_AFTER_LAST,
@@ -1657,6 +1685,7 @@ enum nl80211_sta_bss_param {
  * @NL80211_STA_INFO_CONNECTED_TIME: time since the station is last connected
  * @NL80211_STA_INFO_STA_FLAGS: Contains a struct nl80211_sta_flag_update.
  * @NL80211_STA_INFO_BEACON_LOSS: count of times beacon loss was detected (u32)
+ * @NL80211_STA_INFO_T_OFFSET: timing offset with respect to this STA (s64)
  * @__NL80211_STA_INFO_AFTER_LAST: internal
  * @NL80211_STA_INFO_MAX: highest possible station info attribute
  */
@@ -1680,6 +1709,7 @@ enum nl80211_sta_info {
 	NL80211_STA_INFO_CONNECTED_TIME,
 	NL80211_STA_INFO_STA_FLAGS,
 	NL80211_STA_INFO_BEACON_LOSS,
+	NL80211_STA_INFO_T_OFFSET,
 
 	/* keep last */
 	__NL80211_STA_INFO_AFTER_LAST,
@@ -2108,7 +2138,14 @@ enum nl80211_mntr_flags {
  * @NL80211_MESHCONF_FORWARDING: set Mesh STA as forwarding or non-forwarding
  * or forwarding entity (default is TRUE - forwarding entity)
  *
+ * @NL80211_MESHCONF_RSSI_THRESHOLD: RSSI threshold in dBm. This specifies the
+ * threshold for average signal strength of candidate station to establish
+ * a peer link.
+ *
  * @NL80211_MESHCONF_ATTR_MAX: highest possible mesh configuration attribute
+ *
+ * @NL80211_MESHCONF_SYNC_OFFSET_MAX_NEIGHBOR: maximum number of neighbors
+ * to synchronize to for 11s default synchronization method (see 11C.12.2.2)
  *
  * @__NL80211_MESHCONF_ATTR_AFTER_LAST: internal use
  */
@@ -2133,6 +2170,8 @@ enum nl80211_meshconf_params {
 	NL80211_MESHCONF_GATE_ANNOUNCEMENTS,
 	NL80211_MESHCONF_HWMP_PERR_MIN_INTERVAL,
 	NL80211_MESHCONF_FORWARDING,
+	NL80211_MESHCONF_RSSI_THRESHOLD,
+	NL80211_MESHCONF_SYNC_OFFSET_MAX_NEIGHBOR,
 
 	/* keep last */
 	__NL80211_MESHCONF_ATTR_AFTER_LAST,
@@ -2172,6 +2211,11 @@ enum nl80211_meshconf_params {
  * complete (unsecured) mesh peering without the need of a userspace daemon.
  *
  * @NL80211_MESH_SETUP_ATTR_MAX: highest possible mesh setup attribute number
+ *
+ * @NL80211_MESH_SETUP_ENABLE_VENDOR_SYNC: Enable this option to use a
+ * vendor specific synchronization method or disable it to use the default
+ * neighbor offset synchronization
+ *
  * @__NL80211_MESH_SETUP_ATTR_AFTER_LAST: Internal use
  */
 enum nl80211_mesh_setup_params {
@@ -2181,6 +2225,7 @@ enum nl80211_mesh_setup_params {
 	NL80211_MESH_SETUP_IE,
 	NL80211_MESH_SETUP_USERSPACE_AUTH,
 	NL80211_MESH_SETUP_USERSPACE_AMPE,
+	NL80211_MESH_SETUP_ENABLE_VENDOR_SYNC,
 
 	/* keep last */
 	__NL80211_MESH_SETUP_ATTR_AFTER_LAST,
@@ -2800,10 +2845,13 @@ enum nl80211_ap_sme_features {
  *	TX status to the socket error queue when requested with the
  *	socket option.
  * @NL80211_FEATURE_HT_IBSS: This driver supports IBSS with HT datarates.
+ * @NL80211_FEATURE_INACTIVITY_TIMER: This driver takes care of freeing up
+ *	the connected inactive stations in AP mode.
  */
 enum nl80211_feature_flags {
 	NL80211_FEATURE_SK_TX_STATUS	= 1 << 0,
 	NL80211_FEATURE_HT_IBSS		= 1 << 1,
+	NL80211_FEATURE_INACTIVITY_TIMER = 1 << 2,
 };
 
 /**
