@@ -387,7 +387,10 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 {
 	struct nlattr *container;
 	float rate;
+	unsigned char rates[NL80211_MAX_SUPP_RATES];
+	int n_rates = 0;
 	char *end;
+	char *value = NULL, *sptr = NULL;
 
 	if (argc < 1)
 		return 1;
@@ -395,6 +398,34 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 	NLA_PUT(msg, NL80211_ATTR_MESH_ID, strlen(argv[0]), argv[0]);
 	argc--;
 	argv++;
+
+	/* basic rates */
+	if (argc > 1 && strcmp(argv[0], "basic-rates") == 0) {
+		argv++;
+		argc--;
+
+		value = strtok_r(argv[0], ",", &sptr);
+
+		while (value && n_rates < NL80211_MAX_SUPP_RATES) {
+			rate = strtod(value, &end);
+			rates[n_rates] = rate * 2;
+
+			/* filter out suspicious values  */
+			if (*end != '\0' || !rates[n_rates] ||
+			    rate*2 != rates[n_rates])
+				return 1;
+
+			n_rates++;
+			value = strtok_r(NULL, ",", &sptr);
+		}
+
+		NLA_PUT(msg, NL80211_ATTR_BSS_BASIC_RATES, n_rates, rates);
+
+		argv++;
+		argc--;
+	}
+
+	/* multicast rate */
 
 	if (argc > 1 && strcmp(argv[0], "mcast-rate") == 0) {
 		argv++;
@@ -435,10 +466,11 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
  nla_put_failure:
 	return -ENOBUFS;
 }
-COMMAND(mesh, join, "<mesh ID> [mcast-rate <rate in Mbps>] [vendor_sync on|off]"
-	" [<param>=<value>]*",
+COMMAND(mesh, join, "<mesh ID> [basic-rates <rate in Mbps,rate2,...>]"
+	"[mcast-rate <rate in Mbps>] [vendor_sync on|off] [<param>=<value>]*",
 	NL80211_CMD_JOIN_MESH, 0, CIB_NETDEV, join_mesh,
-	"Join a mesh with the given mesh ID with mcast-rate and mesh parameters.");
+	"Join a mesh with the given mesh ID with basic-rates,"
+	"mcast-rate and mesh parameters.");
 
 static int leave_mesh(struct nl80211_state *state, struct nl_cb *cb,
 		      struct nl_msg *msg, int argc, char **argv,
