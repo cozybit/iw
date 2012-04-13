@@ -346,6 +346,8 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 {
 	float rate;
 	char *end;
+	unsigned char basic_mcs[16] = { 0 };
+	int len, i;
 
 	if (argc < 1)
 		return 1;
@@ -353,6 +355,30 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 	NLA_PUT(msg, NL80211_ATTR_MESH_ID, strlen(argv[0]), argv[0]);
 	argc--;
 	argv++;
+
+	/* basic MCS set */
+	if (argc > 1 && strcmp(argv[0], "basic-mcs") == 0) {
+		argv++;
+		argc--;
+
+		len = strlen(argv[0]);
+		if (len > 32 || len < 2 || len % 2)
+			return -EINVAL;
+
+		/* 802.11 bit map is little-endian byte order */
+		for (i = len - 2; i >= 0; i -= 2) {
+			int idx = (len - 2  - i) / 2;
+			char *n = strndup(argv[0] + i, 2);
+			if (!n)
+				return -EINVAL;
+			basic_mcs[idx] = (unsigned char) strtol(n, NULL, 16);
+			free(n);
+		}
+
+		NLA_PUT(msg, NL80211_ATTR_BSS_BASIC_MCS_SET, 16, basic_mcs);
+		argv++;
+		argc--;
+	}
 
 	if (argc > 1 && strcmp(argv[0], "mcast-rate") == 0) {
 		argv++;
@@ -373,7 +399,8 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
  nla_put_failure:
 	return -ENOBUFS;
 }
-COMMAND(mesh, join, "<mesh ID> [mcast-rate <rate in Mbps>] [<param>=<value>]*",
+COMMAND(mesh, join, "<mesh ID> [mcast-rate <rate in Mbps>] "
+	"[basic-mcs <basic MCS set bitmask> [<param>=<value>]*",
 	NL80211_CMD_JOIN_MESH, 0, CIB_NETDEV, join_mesh,
 	"Join a mesh with the given mesh ID with mcast-rate and mesh parameters.");
 
