@@ -259,7 +259,6 @@ static int __handle_cmd(struct nl80211_state *state, enum id_input idby,
 {
 	const struct cmd *cmd, *match = NULL, *sectcmd;
 	struct nl_cb *cb;
-	struct nl_cb *s_cb;
 	struct nl_msg *msg;
 	int devidx = 0;
 	int err, o_argc;
@@ -381,8 +380,7 @@ static int __handle_cmd(struct nl80211_state *state, enum id_input idby,
 	}
 
 	cb = nl_cb_alloc(iw_debug ? NL_CB_DEBUG : NL_CB_DEFAULT);
-	s_cb = nl_cb_alloc(iw_debug ? NL_CB_DEBUG : NL_CB_DEFAULT);
-	if (!cb || !s_cb) {
+	if (!cb) {
 		fprintf(stderr, "failed to allocate netlink callbacks\n");
 		err = 2;
 		goto out_free_msg;
@@ -405,8 +403,6 @@ static int __handle_cmd(struct nl80211_state *state, enum id_input idby,
 	err = cmd->handler(state, cb, msg, argc, argv);
 	if (err)
 		goto out;
-
-	nl_socket_set_cb(state->nl_sock, s_cb);
 
 	err = nl_send_auto_complete(state->nl_sock, msg);
 	if (err < 0)
