@@ -18,6 +18,16 @@
 #  define nl_sock nl_handle
 #endif
 
+static const struct {
+	const char *name;
+	unsigned int val;
+} htmap[] = {	/* these should match the order of nl80211_channel_type */
+	{ .name = "NOHT", .val = NL80211_CHAN_NO_HT, },
+	{ .name = "HT20", .val = NL80211_CHAN_HT20, },
+	{ .name = "HT40-", .val = NL80211_CHAN_HT40MINUS, },
+	{ .name = "HT40+", .val = NL80211_CHAN_HT40PLUS, },
+};
+
 struct nl80211_state {
 	struct nl_sock *nl_sock;
 	int nl80211_id;

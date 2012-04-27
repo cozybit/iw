@@ -29,15 +29,6 @@ static int join_ibss(struct nl80211_state *state,
 	float rate;
 	int bintval;
 	int i;
-	static const struct {
-		const char *name;
-		unsigned int val;
-	} htmap[] = {
-		{ .name = "HT20", .val = NL80211_CHAN_HT20, },
-		{ .name = "HT40+", .val = NL80211_CHAN_HT40PLUS, },
-		{ .name = "HT40-", .val = NL80211_CHAN_HT40MINUS, },
-		{ .name = "NOHT", .val = NL80211_CHAN_NO_HT, },
-	};
 	unsigned int htval;
 
 	if (argc < 2)

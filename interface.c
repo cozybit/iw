@@ -267,6 +267,10 @@ static int print_iface_handler(struct nl_msg *msg, void *arg)
 		printf("%s\ttype %s\n", indent, iftype_name(nla_get_u32(tb_msg[NL80211_ATTR_IFTYPE])));
 	if (!wiphy && tb_msg[NL80211_ATTR_WIPHY])
 		printf("%s\twiphy %d\n", indent, nla_get_u32(tb_msg[NL80211_ATTR_WIPHY]));
+	if (tb_msg[NL80211_ATTR_WIPHY_FREQ])
+		printf("%s\tchannel %d %s\n", indent,
+		       ieee80211_frequency_to_channel(nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_FREQ])),
+		       htmap[nla_get_u32(tb_msg[NL80211_ATTR_WIPHY_CHANNEL_TYPE])].name);
 
 	return NL_SKIP;
 }
