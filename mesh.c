@@ -387,6 +387,7 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 {
 	struct nlattr *container;
 	float rate;
+	uint32_t flags;
 	char *end;
 
 	if (argc < 1)
@@ -404,7 +405,18 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 		if (*end != '\0')
 			return 1;
 
-		NLA_PUT_U32(msg, NL80211_ATTR_MCAST_RATE, (int)(rate * 10));
+		if (rate < 54)
+			/* it's an MCS */
+			NLA_PUT_U32(msg, NL80211_ATTR_MCAST_RATE, (int)(rate));
+		else
+			NLA_PUT_U32(msg, NL80211_ATTR_MCAST_RATE, (int)(rate * 10));
+		argv++;
+		argc--;
+
+		flags = strtod(argv[0], &end);
+		if (*end != '\0')
+			return 1;
+		NLA_PUT_U32(msg, NL80211_ATTR_MCAST_RATE_FLAGS, (uint32_t)(flags));
 		argv++;
 		argc--;
 	}
