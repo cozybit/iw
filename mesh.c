@@ -258,6 +258,9 @@ const static struct mesh_param_descr _mesh_param_descrs[] =
 	_my_nla_put_u32, _parse_u32_power_mode, _print_u32_power_mode},
 	{"mesh_awake_window", NL80211_MESHCONF_AWAKE_WINDOW,
 	_my_nla_put_u16, _parse_u16, _print_u16_in_TUs},
+	{"mesh_peer_inactivity_limit",
+	NL80211_MESHCONF_PEER_INACTIVITY_LIMIT,
+	_my_nla_put_u16, _parse_u16, _print_u16},
 };
 
 static void print_all_mesh_param_descr(void)
