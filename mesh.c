@@ -120,6 +120,8 @@ static uint32_t _parse_u32_power_mode(const char *str, _any *ret)
 		v = NL80211_MESH_POWER_LIGHT_SLEEP;
 	else if (!strcmp(str, "deep"))
 		v = NL80211_MESH_POWER_DEEP_SLEEP;
+	else if (!strcmp(str, "auto"))
+		v = NL80211_MESH_POWER_AUTO;
 	else
 		return 0xff;
 
@@ -175,6 +177,9 @@ static void _print_u32_power_mode(struct nlattr *a)
 		break;
 	case NL80211_MESH_POWER_DEEP_SLEEP:
 		printf("deep");
+		break;
+	case NL80211_MESH_POWER_AUTO:
+		printf("auto");
 		break;
 	default:
 		printf("undefined");
