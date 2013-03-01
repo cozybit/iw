@@ -496,6 +496,21 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 		argv++;
 		argc--;
 	}
+
+	if (argc > 1 && strcmp(argv[0], "share") == 0) {
+		argv++;
+		argc--;
+
+		if (strcmp(argv[0], "on") == 0)
+			NLA_PUT_U8(msg, NL80211_MESH_SETUP_CAN_SHARE, 1);
+		else if (strcmp(argv[0], "off") == 0)
+			NLA_PUT_U8(msg, NL80211_MESH_SETUP_CAN_SHARE, 0);
+		else
+			return 1;
+
+		argv++;
+		argc--;
+	}
 	/* parse and put other NL80211_ATTR_MESH_SETUP elements here */
 
 	nla_nest_end(msg, container);
@@ -508,7 +523,7 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 }
 COMMAND(mesh, join, "<mesh ID> [mcast-rate <rate in Mbps>]"
 	" [beacon-interval <time in TUs>] [dtim-period <value>]"
-	" [vendor_sync on|off] [<param>=<value>]*",
+	" [vendor_sync on|off] [share on|off] [<param>=<value>]*",
 	NL80211_CMD_JOIN_MESH, 0, CIB_NETDEV, join_mesh,
 	"Join a mesh with the given mesh ID with mcast-rate and mesh parameters.");
 
