@@ -502,7 +502,11 @@ static int join_mesh(struct nl80211_state *state, struct nl_cb *cb,
 		argc--;
 
 		if (strcmp(argv[0], "on") == 0)
-			NLA_PUT_FLAG(msg, NL80211_MESH_SETUP_CAN_SHARE);
+			NLA_PUT_U8(msg, NL80211_MESH_SETUP_CAN_SHARE, 1);
+		else if (strcmp(argv[0], "off") == 0)
+			NLA_PUT_U8(msg, NL80211_MESH_SETUP_CAN_SHARE, 0);
+		else
+			return 1;
 
 		argv++;
 		argc--;
