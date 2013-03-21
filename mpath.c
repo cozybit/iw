@@ -181,11 +181,19 @@ static int handle_mpath_dump(struct nl80211_state *state,
 			     int argc, char **argv,
 			     enum id_input id)
 {
+	if ((argc == 1) && strcmp("mbss", argv[0]) == 0) {
+		NLA_PUT_FLAG(msg, NL80211_ATTR_MPATH_DUMP_MBSS);
+		argc--;
+		argv++;
+	}
+
 	printf("DEST ADDR         NEXT HOP          IFACE\tSN\tMETRIC\tQLEN\t"
 	       "EXPTIME\t\tDTIM\tDRET\tFLAGS\n");
 	nl_cb_set(cb, NL_CB_VALID, NL_CB_CUSTOM, print_mpath_handler, NULL);
 	return 0;
+ nla_put_failure:
+	return -EINVAL;
 }
-COMMAND(mpath, dump, NULL,
+COMMAND(mpath, dump, "[mbss]",
 	NL80211_CMD_GET_MPATH, NLM_F_DUMP, CIB_NETDEV, handle_mpath_dump,
 	"List known mesh paths.");
