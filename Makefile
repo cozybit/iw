@@ -10,7 +10,7 @@ INSTALL ?= install
 CC ?= "gcc"
 
 CFLAGS ?= -O2 -g
-CFLAGS += -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration
+CFLAGS += -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -I$(LIBNL)/include
 
 OBJS = iw.o genl.o event.o info.o phy.o \
 	interface.o ibss.o station.o survey.o util.o \
@@ -25,20 +25,7 @@ OBJS += $(OBJS-y) $(OBJS-Y)
 
 ALL = iw
 
-ifeq ($(NO_PKG_CONFIG),)
-NL3xFOUND := $(shell $(PKG_CONFIG) --atleast-version=3.2 libnl-3.0 && echo Y)
-ifneq ($(NL3xFOUND),Y)
-NL31FOUND := $(shell $(PKG_CONFIG) --exact-version=3.1 libnl-3.1 && echo Y)
-ifneq ($(NL31FOUND),Y)
-NL3FOUND := $(shell $(PKG_CONFIG) --atleast-version=3 libnl-3.0 && echo Y)
-ifneq ($(NL3FOUND),Y)
-NL2FOUND := $(shell $(PKG_CONFIG) --atleast-version=2 libnl-2.0 && echo Y)
-ifneq ($(NL2FOUND),Y)
-NL1FOUND := $(shell $(PKG_CONFIG) --atleast-version=1 libnl-1 && echo Y)
-endif
-endif
-endif
-endif
+NL2FOUND := Y
 
 ifeq ($(NL1FOUND),Y)
 NLLIBNAME = libnl-1
@@ -76,10 +63,6 @@ ifeq ($(NLLIBNAME),)
 $(error Cannot find development files for any supported version of libnl)
 endif
 
-LIBS += $(shell $(PKG_CONFIG) --libs $(NLLIBNAME))
-CFLAGS += $(shell $(PKG_CONFIG) --cflags $(NLLIBNAME))
-endif # NO_PKG_CONFIG
-
 ifeq ($(V),1)
 Q=
 NQ=true
@@ -103,7 +86,7 @@ version.c: version.sh $(patsubst %.o,%.c,$(VERSION_OBJS)) nl80211.h iw.h Makefil
 
 iw:	$(OBJS)
 	@$(NQ) ' CC  ' iw
-	$(Q)$(CC) $(LDFLAGS) $(OBJS) $(LIBS) -o iw
+	$(Q)$(CC) $(LDFLAGS) $(OBJS) $(LIBNL)/lib/libnl.a $(LIBNL)/lib/libnl-genl.a ${EXTLDFLAGS} -o iw
 
 check:
 	$(Q)$(MAKE) all CC="REAL_CC=$(CC) CHECK=\"sparse -Wall\" cgcc"
