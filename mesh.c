@@ -530,3 +530,56 @@ static int leave_mesh(struct nl80211_state *state, struct nl_cb *cb,
 }
 COMMAND(mesh, leave, NULL, NL80211_CMD_LEAVE_MESH, 0, CIB_NETDEV, leave_mesh,
 	"Leave a mesh.");
+
+static int trigger_mesh_chswitch(struct nl80211_state *state, struct nl_cb *cb,
+				 struct nl_msg *msg, int argc, char **argv,
+				 enum id_input id)
+{
+	static const struct {
+		const char *name;
+		unsigned int val;
+	} htmap[] = {
+		{ .name = "HT20", .val = NL80211_CHAN_HT20, },
+		{ .name = "HT40+", .val = NL80211_CHAN_HT40PLUS, },
+		{ .name = "HT40-", .val = NL80211_CHAN_HT40MINUS, },
+	};
+	unsigned int htval = NL80211_CHAN_NO_HT;
+	enum nl80211_band band;
+	unsigned int channel, count;
+	int i;
+	char *end;
+
+	if (argc < 2)
+		return 1;
+
+	channel = strtoul(argv[0], &end, 10);
+	argc--;
+	argv++;
+	count = strtoul(argv[0], &end, 10);
+	argc--;
+	argv++;
+
+	band = channel <= 14 ? NL80211_BAND_2GHZ : NL80211_BAND_5GHZ;
+	channel = ieee80211_channel_to_frequency(channel, band);
+
+	NLA_PUT_U32(msg, NL80211_ATTR_WIPHY_FREQ, channel);
+	NLA_PUT_U32(msg, NL80211_ATTR_CH_SWITCH_COUNT, count);
+
+	for (i = 0; i < ARRAY_SIZE(htmap); i++) {
+		if (strcasecmp(htmap[i].name, argv[0]) == 0) {
+			htval = htmap[i].val;
+			break;
+		}
+	}
+
+	NLA_PUT_U32(msg, NL80211_ATTR_WIPHY_CHANNEL_TYPE, htval);
+
+	return 0;
+
+nla_put_failure:
+	return -ENOBUFS;
+}
+
+COMMAND(mesh, chswitch, "<new channel> <count in TBTT> [HT20|HT40+|HT40-]",
+	NL80211_CMD_CHANNEL_SWITCH, 0, CIB_NETDEV, trigger_mesh_chswitch,
+	"Trigger the CSA action frame and switch to a new operating channel.");
